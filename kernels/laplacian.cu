@@ -16,10 +16,9 @@ using int16 = short;
 struct Saturate {
     __host__ __device__ void operator()(thrust::tuple<int16, unchar&> t) const {
         int16 val_in = thrust::get<0>(t);
-        int val = (int)val_in;        
+        int val = (int)val_in;
         if (val < 0) val = -val; 
         if (val > 255) val = 255;
-        
         thrust::get<1>(t) = (unchar)val;
     }
 };
@@ -70,9 +69,7 @@ torch::Tensor laplacian(torch::Tensor input) {
     int width = input.size(1);
     int size_pixels = width * height;
     size_t size_bytes = size_pixels * sizeof(unchar);
-    //cudaStream_t stream = at::cuda::getCurrentCUDAStream().stream();
     auto options = torch::TensorOptions().dtype(torch::kUInt8).device(torch::kCPU);
-    //auto options = torch::TensorOptions().dtype(torch::kUInt8).device(input.device());
     torch::Tensor output = torch::empty({height, width}, options);
 
     cudaHostRegister(input.data_ptr(),size_bytes,cudaHostRegisterDefault);
@@ -84,12 +81,10 @@ torch::Tensor laplacian(torch::Tensor input) {
     cudaMalloc(&d_in,size_bytes);
     cudaMalloc(&d_out_final,size_bytes);
     cudaMalloc(&d_raw, size_pixels * sizeof(int16));
-    //cudaMallocAsync(&d_raw, size_pixels * sizeof(int16), stream);
     cudaStream_t stream;
     cudaStreamCreate(&stream);
     cudaMemcpyAsync(d_in,input.data_ptr(),size_bytes,cudaMemcpyHostToDevice, stream);
-    //const unchar* d_in = input.data_ptr<unchar>();
-    //unchar* d_out_final = output.data_ptr<unchar>();
+    
     {
         nvtx3::scoped_range r_kern{"Kernel_Launch"};
         dim3 threads(BLOCK_SIZE, BLOCK_SIZE);
@@ -120,7 +115,6 @@ torch::Tensor laplacian(torch::Tensor input) {
     cudaFree(d_raw);
     cudaFree(d_out_final);
     cudaStreamDestroy(stream);
-    //cudaFreeAsync(d_raw, stream);
 
     return output;
 }
