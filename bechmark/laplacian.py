@@ -12,8 +12,7 @@ def benchmark_laplacian(sizes=[1024, 2048, 4096], runs=50):
         print(f"\n=== Benchmarking {size}x{size} image ===")
         
         img_np = np.random.randint(0, 256, (size, size), dtype=np.uint8)
-        img_torch = torch.from_numpy(img_np)#.cuda()
-        #pinned_cpu = torch.from_numpy(img_np).pin_memory()
+        img_torch = torch.from_numpy(img_np)
         nvtx.range_push("CPU_Loop")
         start = time.perf_counter()
         for _ in range(runs):
@@ -27,7 +26,6 @@ def benchmark_laplacian(sizes=[1024, 2048, 4096], runs=50):
         nvtx.range_push("FastCV_GPU_Loop")
         start = time.perf_counter()
         for _ in range(runs):
-            #inp = pinned_cpu.to('cuda', non_blocking=True)
             _ = fastcv.laplacian(img_torch)
         torch.cuda.synchronize()
         end = time.perf_counter()
